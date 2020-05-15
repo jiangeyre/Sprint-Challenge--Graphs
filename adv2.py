@@ -56,15 +56,30 @@ def play():
     
     return trav_path
 
+# traversal test to call upon in the find shorty - slightly modified the test below
+def test_traversal(test_traversal_path):
+    visited_rooms = set()
+    # create new test player since player is used below
+    testplayer = Player(world.starting_room)
+    testplayer.current_room = world.starting_room
+    visited_rooms.add(testplayer.current_room)
+
+    for move in test_traversal_path:
+        testplayer.travel(move)
+        visited_rooms.add(testplayer.current_room)
+
+    if len(visited_rooms) == len(room_graph):
+        print(f"TESTS PASSED: {len(test_traversal_path)} moves, {len(visited_rooms)} rooms visited")
+    else:
+        print("TESTS FAILED: INCOMPLETE TRAVERSAL")
+        print(f"{len(room_graph) - len(visited_rooms)} unvisited rooms")
+
 traversal_path = []
 
+# Find the shortest path.
 def find_shorty():
     global traversal_path
     traversal_path = play()
-
-    if len(traversal_path) <= 2000:
-        print("2: Tests pass with length <= 2000!")
-        return
 
     if len(traversal_path) < 960:
         print("3: Tests pass with length < 960!")
@@ -72,23 +87,27 @@ def find_shorty():
 
     prev_trav = len(traversal_path)
     trav_count = 0
-
+    # TRYING TO FIND THE SHORTEST ABOVE 950
     while len(traversal_path) > 950:
         trav_count += 1
-
-        if trav_count in range(0, 1000000000000000, 1000):
+        # IINCREMENT FOR EACH MOVE
+        # KEEPS RUNNING TO FIND THE SHORTEST PATH
+        if trav_count in range(0, 200000, 1000):
             print("Running ", trav_count)
 
         traversal_path = play()
 
         if len(traversal_path) < prev_trav:
-            print("Shortest - " , len(traversal_path))
+            print("Shortest ATM - " , len(traversal_path), "AT: ", trav_count)
             prev_trav = len(traversal_path)
+            print("*********************************")
+            test_traversal(traversal_path)
+            print("*********************************")
+    # at the end        
     print("Total runs: ", trav_count)
     
 # run the function
 find_shorty()
-
 
 # TRAVERSAL TEST - DO NOT MODIFY
 visited_rooms = set()
