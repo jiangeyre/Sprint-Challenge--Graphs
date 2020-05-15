@@ -9,7 +9,7 @@ def random_exit(length):
 
     return ran
 
-
+# imports from the util files we used this week
 class Queue():
     def __init__(self):
         self.queue = []
@@ -37,6 +37,8 @@ class Stack():
     def size(self):
         return len(self.stack)
 
+
+# import the Graph we have been using all week
 class Graph:
     def __init__(self):
         self.vertices = {}
@@ -64,32 +66,6 @@ class Graph:
                     neighbors.append(room.get_room_in_direction(direction))
                     s.push(neighbors)
                     exits.remove(direction)
-        return self.vertices
-
-    def bfs_rooms(self, starting_vertex, destination_vertex):
-        visited = set()
-        q = Queue()
-        q.enqueue([starting_vertex])
-
-        while q.size() > 0:
-            path = q.dequeue()
-            room = path[-1]
-            if room == destination_vertex:
-                    return path
-            else:
-                if room not in visited:
-                    self.vertices[room.id] = {}
-                    exits = room.get_exits()
-                    for direction in exits:
-                        next_room = room.get_room_in_direction(direction)
-                        self.vertices[room.id][next_room.id] = direction
-                    visited.add(room)
-                    while len(exits) > 0:
-                        direction = exits[0]
-                        neighbors = list(path)
-                        neighbors.append(room.get_room_in_direction(direction))
-                        q.enqueue(neighbors)
-                        exits.remove(direction)
         return self.vertices
 
     def bfs(self, starting_vertex, destination_vertex):
