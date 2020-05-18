@@ -1,123 +1,14 @@
 from room import Room
 from player import Player
 from world import World
+from util import Stack, Queue, Graph
 
-import sys, os
-from util import Stack, Queue, bfs, dfs
-
-import random
 from ast import literal_eval
 
-# Load world
+# Loads the world
 world = World()
 
-def find_near_unvisited_room(graph, current_room):
-    # print("Current room in find_near_unvisited_room is " + str(current_room))
-    path_unvisited = bfs(graph, current_room)
-    # dfs option
-    # path_unvisited = dfs(graph, current_room)
-
-    # directions
-    path = []
-
-    for i in range(0, len(path_unvisited) - 1):
-        list_graph = list(graph[path_unvisited[i]].items())
-
-        nav = ""
-
-        for x in list_graph:
-            if x[1] == path_unvisited[i + 1]:
-                nav = x[0]
-
-        path.append(nav)
-
-    return (path)
-
-
-# how to traverse through the rooms
-def traversal_path():
-    # initialize an array of visited rooms
-    visited = set()
-    # creating the player and linking
-    player = Player(world.starting_room)
-    # add the current room player is in to the array that keeps track of all visited rooms
-    visited.add(player.current_room)
-    # the path we take
-    traversal_path = []
-    stack = []
-    graph = dict()
-    graph[player.current_room.id] = dict()
-    exits = player.current_room.get_exits()
-
-    for exit in exits:
-        graph[player.current_room.id][exit] = "?"
-
-        # find what movements can work and visit rooms
-        unvisited_nav = [item[0] for item in list(graph[player.current_room.id].items()) if item[1] == "?"]
-
-        trek = unvisited_nav[random.randint( 0, len(unvisited_nav) - 1 )]
-        stack.append(trek)
-
-        # as long as the total visited rooms is less than total rooms avail
-        while len(visited) < len(room_graph):
-            trek = stack.pop()
-
-            previous = player.current_room.id
-            # use the player's travel method to move the direction
-            player.travel(trek)
-            traversal_path.append(trek)
-
-            # Add the room to the visited
-            visited.add(player.current_room)
-
-            exits = player.current_room.get_exits()
-
-            # Update the graph with the previous room
-            graph[previous][trek] = player.current_room.id
-
-            # make current room is it does not already exist in the graph
-            if player.current_room.id not in graph:
-                graph[player.current_room.id] = dict()
-
-                for exit in exits:
-                    graph[player.current_room.id][exit] = '?'
-
-            # Update the entry for the current room.
-            opposites = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e'}
-            opposite = opposites[trek]
-
-            graph[player.current_room.id][opposite] = previous
-
-            # find the unvisited directions 
-            unvisited = [item[0] for item in list(graph[player.current_room.id].items()) if item[1] == "?"]
-
-            # if still unvisited directions, pick a random direction to move in from the current room player is in
-            if len(unvisited) > 0:
-                move = unvisited[random.randint(
-                    0, len(unvisited) - 1)]
-                stack.append(move)
-
-            elif len(visited) == len(room_graph):
-                #print("Traversal_path is successfully made! " + str(traversal_path))
-                return traversal_path
-
-            else:
-                # Back up to nearest room with an unexplored direction
-                next_move = find_near_unvisited_room(graph, player.current_room.id)
-
-                for i in range(0, len(next_move) - 1):
-                    player.travel(next_move[i])
-
-                    # keep track of that direction
-                    traversal_path.append(next_move[i])
-
-                    # add to visited
-                    visited.add(player.current_room)
-                stack.append(next_move[-1])
-
-
-
-# You may uncomment the smaller graphs for development and testing purposes.
+# Use for testing.
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
 # map_file = "maps/test_loop.txt"
@@ -125,22 +16,113 @@ def traversal_path():
 map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
-# room_graph=literal_eval(open(map_file, "r").read())
-with open(os.path.join(sys.path[0], map_file), 'r') as f:
-    room_graph = literal_eval(f.read())
-
+room_graph=literal_eval(open(map_file, "r").read())
 world.load_graph(room_graph)
 
 # Print an ASCII map
 world.print_rooms()
 
+# create the player with the starting room from world
 player = Player(world.starting_room)
 
-# Fill this out with directions to walk
-# traversal_path = ['n', 'n']
-traversal_path = traversal_path()
+# initialize a count
+count = 0
 
+# running the game
+def play():
+    # create an array of visited rooms to keep track of
+    visited = set()
+    graph = Graph()
+    # the path we take in that one run of the game
+    trav_path = []
+    # using dfs to find the rooms - find all rooms on possible branch
+    d_rooms = graph.dfs(player.current_room)
+    # returns and array of the rooms in d_rooms
+    rooms = [d_room for d_room in d_rooms]
+    # while total visited is less than the total rooms in graph of world - 1
+    while(len(visited) < len(room_graph) - 1):
+        # current room is the first room in the rooms array
+        curr_room = rooms[0]
+        # the next traverse will be to the next item in the rooms array
+        next_room = rooms[1]
 
+        # use a bfs to find the shortest path to destination - explores all the neighbour nodes
+        shortest = graph.bfs(curr_room, next_room)
+        # loop through shortest until nothing left
+        while len(shortest) > 1:
+            # find the neighbours
+            curr_room_nays = d_rooms[shortest[0]]
+            # next traverse will be to the next item in shortest array
+            next_room = shortest[1]
+            # if the next room (in the shortest path) exists in the current neighbours of curr room
+            if next_room in curr_room_nays:
+                trav_path.append(curr_room_nays[next_room])
+            # remove the first room from the queue
+            shortest.remove(shortest[0])
+        
+        # remove the current room from the total rooms
+        rooms.remove(curr_room)
+        # pop it on to the visited rooms array
+        visited.add(curr_room)
+    
+    return trav_path
+
+# traversal test to call upon in the find shorty - slightly modified the test below
+def test_traversal(test_traversal_path):
+    visited_rooms = set()
+    # create new test player since player is used below
+    testplayer = Player(world.starting_room)
+    testplayer.current_room = world.starting_room
+    visited_rooms.add(testplayer.current_room)
+
+    for move in test_traversal_path:
+        testplayer.travel(move)
+        visited_rooms.add(testplayer.current_room)
+
+    if len(visited_rooms) == len(room_graph):
+        print(f"TESTS PASSED: {len(test_traversal_path)} moves, {len(visited_rooms)} rooms visited")
+    else:
+        print("TESTS FAILED: INCOMPLETE TRAVERSAL")
+        print(f"{len(room_graph) - len(visited_rooms)} unvisited rooms")
+
+# initialize empty array for traversal path
+traversal_path = []
+
+# Find the shortest path.
+def find_shorty():
+    # bring in outside variable
+    global traversal_path
+    # the path will equal the trav_path returned when running play and going through the dfs, then bfs
+    traversal_path = play()
+    # for when the traversal path is less than 960
+    if len(traversal_path) < 960:
+        print("3: Tests pass with length < 960!")
+        return
+    # previous traversal length = the current traversal path length
+    prev_trav = len(traversal_path)
+    # start the trav_count at 0 so we can incrememnt it for each run through the play()
+    trav_count = 0
+    # TRYING TO FIND THE SHORTEST ABOVE 950
+    while len(traversal_path) > 950:
+        trav_count += 1
+        # INCREMENT FOR EACH RUN OF THE PLAY
+        # KEEPS RUNNING TO FIND THE SHORTEST PATH (runs until 200,000 and shows at increments of 1000)
+        if trav_count in range(0, 200000, 1000):
+            print("Traversal count has ran ", trav_count)
+        # the path = trav path from play
+        traversal_path = play()
+        # outputs messages when the traversal length of the current run is less than the previous lowest trav length
+        if len(traversal_path) < prev_trav:
+            print("Shortest ATM - " , len(traversal_path), "AT: ", trav_count)
+            prev_trav = len(traversal_path)
+            print("*********************************")
+            test_traversal(traversal_path)
+            print("*********************************")
+    # at the end of running all 200,000 - which I have never been patient enough to sit through until the end because my computer can only do so much     
+    print("Total runs: ", trav_count)
+    
+# run the function
+find_shorty()
 
 # TRAVERSAL TEST - DO NOT MODIFY
 visited_rooms = set()
@@ -162,12 +144,12 @@ else:
 #######
 # UNCOMMENT TO WALK AROUND
 #######
-player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0], True)
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")

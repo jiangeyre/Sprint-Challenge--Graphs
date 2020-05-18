@@ -1,3 +1,15 @@
+import random
+
+count = 0
+
+# algorithm for random room picker
+def random_exit(length):
+    # finds a random number in the total length of avail exits
+    ran = random.randrange(0,length)
+
+    return ran
+
+# imports from the util files we used this week
 class Queue():
     def __init__(self):
         self.queue = []
@@ -10,6 +22,7 @@ class Queue():
             return None
     def size(self):
         return len(self.queue)
+
 
 class Stack():
     def __init__(self):
@@ -24,45 +37,52 @@ class Stack():
     def size(self):
         return len(self.stack)
 
-def bfs(graph, starting_vertex):
-    visited_vertices = set()
-    queue = Queue()
-    queue.enqueue([starting_vertex])
-    while queue.size() > 0:
-        current_path = queue.dequeue()
 
-        current_vertex = current_path[-1]
-        # print("current_vertex " + str(current_vertex))
-        if current_vertex not in visited_vertices:
-            neighbors = get_neighbors(graph, current_vertex)
-            for neighbor in neighbors:
-                new_path = list(current_path)
-                new_path.append(neighbor)
-                queue.enqueue(new_path)
-                if neighbor == '?':
-                    return new_path
-            visited_vertices.add(current_vertex)
+# import the Graph we have been using all week
+class Graph:
+    def __init__(self):
+        self.vertices = {}
+    
+    def dfs(self, starting_vertex):
+        visited = set()
+        s = Stack()
+        s.push([starting_vertex])
+        while s.size() > 0:
+            current_room = s.pop()
+            room = current_room[-1]
+            if room not in visited:
+                self.vertices[room.id] = {}
+                exits = room.get_exits()
+                #add exit directions
+                for direction in exits:
+                        next_room = room.get_room_in_direction(direction)
+                        self.vertices[room.id][next_room.id] = direction
+                visited.add(room)
+                #if exits exist, loop and add
+                while len(exits) > 0:
+                    ran_dom = random_exit(len(exits))
+                    direction = exits[ran_dom]
+                    neighbors = list(current_room)
+                    neighbors.append(room.get_room_in_direction(direction))
+                    s.push(neighbors)
+                    exits.remove(direction)
+        return self.vertices
 
+    def bfs(self, starting_vertex, destination_vertex):
+        q = Queue()
+        q.enqueue([starting_vertex])
+        visited = set()
 
-def dfs(graph, starting_vertex):
-    visited_vertices = set()
-    stack = Stack()
-    stack.push([starting_vertex])
-    while stack.size() > 0:
-        current_path = stack.pop()
-
-        current_vertex = current_path[-1]
-        # print("current_vertex " + str(current_vertex))
-        if current_vertex not in visited_vertices:
-            neighbors = get_neighbors(graph, current_vertex)
-            for neighbor in neighbors:
-                new_path = list(current_path)
-                new_path.append(neighbor)
-                stack.push(new_path)
-                if neighbor == '?':
-                    return new_path
-            visited_vertices.add(current_vertex)
-
-# get the IDs of rooms or unknown
-def get_neighbors(graph, room):
-    return list(graph[room].values())
+        while q.size() > 0:
+            path = q.dequeue()
+            room = path[-1]
+            if room == destination_vertex:
+                    return path
+            else:
+                if room not in visited:
+                    visited.add(room)
+                    edges = self.vertices[room]
+                    for next_vert in edges:
+                        path_copy = list(path)
+                        path_copy.append(next_vert)
+                        q.enqueue(path_copy)
